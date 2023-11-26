@@ -215,8 +215,6 @@ export default function Home() {
       characters: charcters,
     };
   });
-  console.log(tableData);
-  console.log(rows);
 
   return (
     <>
@@ -260,7 +258,18 @@ export default function Home() {
           </Button>
         </div>
       </main>
-      {addNewIsVisible && <AddNewMovie setVisibility={setAddNewIsVisible} genres={genres}  setMovies={setMovies} characters={characters} countries={countries} genresMovie={genresMovie} movies={movies} setGenresMovie={setGenresMovie} />}
+      {addNewIsVisible && (
+        <AddNewMovie
+          setVisibility={setAddNewIsVisible}
+          genres={genres}
+          setMovies={setMovies}
+          characters={characters}
+          countries={countries}
+          genresMovie={genresMovie}
+          movies={movies}
+          setGenresMovie={setGenresMovie}
+        />
+      )}
     </>
   );
 }
