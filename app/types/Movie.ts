@@ -25,3 +25,13 @@ export interface GenresMovie {
   movieId: number;
   genreId: number;
 }
+
+export interface MainTableRow {
+  id: number;
+  title: string;
+  country: Country;
+  rating: number;
+  releaseDate: Date;
+  genres: Genre[];
+  characters: Character[];
+}

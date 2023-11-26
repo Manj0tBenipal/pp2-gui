@@ -11,16 +11,23 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import { Character, Country, Genre, GenresMovie, Movie } from "./types/Movie";
+import {
+  Character,
+  Country,
+  Genre,
+  GenresMovie,
+  MainTableRow,
+  Movie,
+} from "./types/Movie";
 import AddNewMovie from "@/components/AddNewMovie";
 
 export default function Home() {
-  const [tableData, setTableData] = useState([]);
-  const [movies, setMovies] = useState<Movie[]>();
+  const [tableData, setTableData] = useState<MainTableRow[]>([]);
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [genresMovie, setGenresMovie] = useState<GenresMovie[]>([]);
-  const [countries, setCountries] = useState<Country[]>();
-  const [characters, setCharacters] = useState<Character[]>();
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [characters, setCharacters] = useState<Character[]>([]);
   const [addNewIsVisible, setAddNewIsVisible] = useState(false);
   useEffect(() => {
     async function getAllData() {
@@ -130,7 +137,7 @@ export default function Home() {
       len(countries) &&
       len(characters)
     ) {
-      const result = movies?.map((el: Movie) => {
+      const result: MainTableRow[] | undefined = movies?.map((el: Movie) => {
         const gnr: Genre[] = [];
         const chars: Character[] = [];
         genresMovie.map((gm: GenresMovie) => {
@@ -164,91 +171,96 @@ export default function Home() {
             }
           })[0] || ({} as Country);
 
-        const movie = {
+        const tableRow: MainTableRow = {
           id: el.id,
           title: el.title,
           rating: el.rating,
           country: country,
-          genre: gnr,
+          genres: gnr,
           characters: chars,
+          releaseDate: el.releaseDate,
         };
-        return movie;
+        return tableRow;
       });
-      console.log(result);
+      setTableData(() => result || ([] as MainTableRow[]));
     }
   }, [genres, genresMovie, countries, characters, movies]);
-  // const rows = tableData.map((movie: Movie) => {
-  //   let genres: string = "";
-  //   for (let i = 0; i < movie.genre.length; i++) {
-  //     if (i < movie.genre.length - 1) {
-  //       genres += movie.genre[i].genreName + ", ";
-  //     } else {
-  //       genres += movie.genre[i].genreName;
-  //     }
-  //   }
-  //   let charcters: string = "";
-  //   for (let i = 0; i < movie.characters.length; i++) {
-  //     if (i < movie.characters.length - 1) {
-  //       charcters +=
-  //         movie.characters[i].characterName +
-  //         `(${movie.characters[i].actorName})` +
-  //         ", ";
-  //     } else {
-  //       charcters +=
-  //         movie.characters[i].characterName +
-  //         `(${movie.characters[i].actorName})`;
-  //     }
-  //   }
-  //   return {
-  //     id: movie.id,
-  //     title: movie.title,
-  //     rating: movie.rating,
-  //     genre: genres,
-  //     characters: charcters,
-  //   };
-  // });
+  const rows = tableData.map((movie: MainTableRow) => {
+    let genres: string = "";
+    for (let i = 0; i < movie.genres.length; i++) {
+      if (i < movie.genres.length - 1) {
+        genres += movie.genres[i].genreName + ", ";
+      } else {
+        genres += movie.genres[i].genreName;
+      }
+    }
+    let charcters: string = "";
+    for (let i = 0; i < movie.characters.length; i++) {
+      if (i < movie.characters.length - 1) {
+        charcters +=
+          movie.characters[i].characterName +
+          `(${movie.characters[i].actorName})` +
+          ", ";
+      } else {
+        charcters +=
+          movie.characters[i].characterName +
+          `(${movie.characters[i].actorName})`;
+      }
+    }
+    return {
+      id: movie.id,
+      title: movie.title,
+      rating: movie.rating,
+      genre: genres,
+      characters: charcters,
+    };
+  });
+  console.log(tableData);
+  console.log(rows);
 
   return (
-    <main className={styles.main}>
-      <div>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Id</TableCell>
-                <TableCell>Title</TableCell>
-                <TableCell>Rating(Out of 10 )</TableCell>
-                <TableCell>Genres</TableCell>
-                <TableCell>Characters</TableCell>
-              </TableRow>
-            </TableHead>
-            {/* <TableBody>
-              {rows.map((row: any) => (
-                <TableRow key={row.id}>
-                  <TableCell>{row.id}</TableCell>
-                  <TableCell>{row.title}</TableCell>
-                  <TableCell>{row.rating}</TableCell>
-                  <TableCell>{row.genre}</TableCell>
-                  <TableCell>{row.characters}</TableCell>
+    <>
+      <main className={styles.main}>
+        <div>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Id</TableCell>
+                  <TableCell>Title</TableCell>
+                  <TableCell>Rating(Out of 10 )</TableCell>
+                  <TableCell>Genres</TableCell>
+                  <TableCell>Characters</TableCell>
                 </TableRow>
-              ))}
-            </TableBody> */}
-          </Table>
-        </TableContainer>
-      </div>
-      <div className="flex flex-column flex-even">
-        <h2>Perform Update, Delete and Create Operations</h2>
+              </TableHead>
+              <TableBody>
+                {rows.map((row: any) => (
+                  <TableRow key={row.id}>
+                    <TableCell>{row.id}</TableCell>
+                    <TableCell>{row.title}</TableCell>
+                    <TableCell>{row.rating}</TableCell>
+                    <TableCell>{row.genre}</TableCell>
+                    <TableCell>{row.characters}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </div>
+        <div className="flex flex-column flex-even">
+          <h2>Perform Update, Delete and Create Operations</h2>
 
-        <Button
-          variant="contained"
-          onClick={() => {
-            setAddNewIsVisible(true);
-          }}
-        >
-          Add a Movie
-        </Button>
-      </div>
-      {addNewIsVisible && <AddNewMovie setVisibility={setAddNewIsVisible} />}
-    </main>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setAddNewIsVisible(true);
+            }}
+          >
+            Add a Movie
+          </Button>
+        </div>
+      </main>
+      {addNewIsVisible && <AddNewMovie setVisibility={setAddNewIsVisible} genres={genres}  setMovies={setMovies} characters={characters} countries={countries} genresMovie={genresMovie} movies={movies} setGenresMovie={setGenresMovie} />}
+    </>
   );
 }
