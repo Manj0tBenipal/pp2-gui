@@ -1,95 +1,91 @@
-import Image from 'next/image'
-import styles from './page.module.css'
-
+"use client";
+import { useState, useEffect } from "react";
+import styles from "./page.module.css";
+import {
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from "@mui/material";
+import { Genre, Movie } from "./types/Movie";
 export default function Home() {
+  const [moviesData, setMoviesData] = useState([]);
+  useEffect(() => {
+    async function getAllMovies() {
+      const res = await fetch("/api/movies", {
+        next: {
+          revalidate: 0,
+        },
+      });
+      const data = await res.json();
+      setMoviesData(data);
+    }
+    getAllMovies();
+  }, []);
+  const rows = moviesData.map((movie: Movie) => {
+    let genres: string = "";
+    for (let i = 0; i < movie.genre.length; i++) {
+      if (i < movie.genre.length - 1) {
+        genres += movie.genre[i].genreName + ", ";
+      } else {
+        genres += movie.genre[i].genreName;
+      }
+    }
+    let charcters: string = "";
+    for (let i = 0; i < movie.characters.length; i++) {
+      if (i < movie.characters.length - 1) {
+        charcters +=
+          movie.characters[i].characterName +
+          `(${movie.characters[i].actorName})` +
+          ", ";
+      } else {
+        charcters +=
+          movie.characters[i].characterName +
+          `(${movie.characters[i].actorName})`;
+      }
+    }
+    return {
+      id: movie.id,
+      title: movie.title,
+      rating: movie.rating,
+      genre: genres,
+      characters: charcters,
+    };
+  });
   return (
     <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
+      <div>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Id</TableCell>
+                <TableCell>Title</TableCell>
+                <TableCell>Rating(Out of 10 )</TableCell>
+                <TableCell>Genres</TableCell>
+                <TableCell>Characters</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((row: any) => (
+                <TableRow key={row.id}>
+                  <TableCell>{row.id}</TableCell>
+                  <TableCell>{row.title}</TableCell>
+                  <TableCell>{row.rating}</TableCell>
+                  <TableCell>{row.genre}</TableCell>
+                  <TableCell>{row.characters}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+      <div>
+        <h2>Perform Update, Delete and Create Operations</h2>
       </div>
     </main>
-  )
+  );
 }
