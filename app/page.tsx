@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import {
+  Button,
   Paper,
   Table,
   TableBody,
@@ -10,51 +11,203 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import { Genre, Movie } from "./types/Movie";
+import { Character, Country, Genre, GenresMovie, Movie } from "./types/Movie";
+import AddNewMovie from "@/components/AddNewMovie";
+
 export default function Home() {
-  const [moviesData, setMoviesData] = useState([]);
+  const [tableData, setTableData] = useState([]);
+  const [movies, setMovies] = useState<Movie[]>();
+  const [genres, setGenres] = useState<Genre[]>([]);
+  const [genresMovie, setGenresMovie] = useState<GenresMovie[]>([]);
+  const [countries, setCountries] = useState<Country[]>();
+  const [characters, setCharacters] = useState<Character[]>();
+  const [addNewIsVisible, setAddNewIsVisible] = useState(false);
   useEffect(() => {
-    async function getAllMovies() {
-      const res = await fetch("/api/movies", {
+    async function getAllData() {
+      const genresRes = await fetch("/api/genres", {
         next: {
           revalidate: 0,
         },
+      })
+        .then((res) => res.json())
+        .then((data) => data);
+      const genres: Genre[] = genresRes.map((genre: any) => {
+        const g: Genre = {
+          genreId: genre.genre_id,
+          genreName: genre.genre_name,
+        };
+        return g;
       });
-      const data = await res.json();
-      setMoviesData(data);
+      setGenres(() => genres);
+
+      const genresMovieRes = await fetch("/api/genresmovie", {
+        next: {
+          revalidate: 0,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => data);
+      const genresMovie: GenresMovie[] = genresMovieRes.map(
+        (genreMovie: any) => {
+          const gm = {
+            genreId: genreMovie.genre_id,
+            movieId: genreMovie.movie_id,
+          };
+          return gm;
+        }
+      );
+      setGenresMovie(() => genresMovie);
+      const countryRes = await fetch("/api/country", {
+        next: {
+          revalidate: 0,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => data);
+
+      const countries: Country[] = countryRes.map((country: any) => {
+        const c: Country = {
+          countryId: country.country_id,
+          countryName: country.country_name,
+        };
+        return c;
+      });
+      setCountries(() => countries);
+      const charactersRes = await fetch("/api/characters", {
+        next: {
+          revalidate: 0,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => data);
+
+      const characters: Character[] = charactersRes.map((character: any) => {
+        const c: Character = {
+          movieId: character.movie_id,
+          characterId: character.character_id,
+          characterName: character.character_name,
+          actorName: character.actor_name,
+        };
+        return c;
+      });
+      setCharacters(() => characters);
+      const moviesRes = await fetch("/api/movies", {
+        next: {
+          revalidate: 0,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => data);
+
+      const movies: Movie[] = moviesRes.map((movie: any) => {
+        const date: string[] = movie.release_date.split("-");
+        const m: Movie = {
+          id: movie.movie_id,
+          title: movie.movie_name,
+          rating: movie.rating,
+          releaseDate: new Date(
+            parseInt(date[0]),
+            parseInt(date[1]),
+            parseInt(date[2])
+          ),
+          country: movie.country_id,
+        };
+        return m;
+      });
+      setMovies(() => movies);
     }
-    getAllMovies();
+
+    getAllData();
   }, []);
-  const rows = moviesData.map((movie: Movie) => {
-    let genres: string = "";
-    for (let i = 0; i < movie.genre.length; i++) {
-      if (i < movie.genre.length - 1) {
-        genres += movie.genre[i].genreName + ", ";
-      } else {
-        genres += movie.genre[i].genreName;
-      }
+  useEffect(() => {
+    function len(arr: any) {
+      return arr?.length > 0;
     }
-    let charcters: string = "";
-    for (let i = 0; i < movie.characters.length; i++) {
-      if (i < movie.characters.length - 1) {
-        charcters +=
-          movie.characters[i].characterName +
-          `(${movie.characters[i].actorName})` +
-          ", ";
-      } else {
-        charcters +=
-          movie.characters[i].characterName +
-          `(${movie.characters[i].actorName})`;
-      }
+    if (
+      len(genres) &&
+      len(movies) &&
+      len(genresMovie) &&
+      len(countries) &&
+      len(characters)
+    ) {
+      const result = movies?.map((el: Movie) => {
+        const gnr: Genre[] = [];
+        const chars: Character[] = [];
+        genresMovie.map((gm: GenresMovie) => {
+          if (el.id === gm.movieId) {
+            genres.map((g: Genre) => {
+              if (g.genreId === gm.genreId) {
+                gnr.push({
+                  genreId: g.genreId,
+                  genreName: g.genreName,
+                } as Genre);
+              }
+            });
+          }
+        });
+        characters?.map((c: Character) => {
+          if (c.movieId === el.id) {
+            chars.push({
+              characterId: c.characterId,
+              characterName: c.characterName,
+              actorName: c.actorName,
+            } as Character);
+          }
+        });
+        const country: Country =
+          countries?.filter((c: Country) => {
+            if (c.countryId === el.id) {
+              return {
+                countryId: c.countryId,
+                countryName: c.countryName,
+              } as Country;
+            }
+          })[0] || ({} as Country);
+
+        const movie = {
+          id: el.id,
+          title: el.title,
+          rating: el.rating,
+          country: country,
+          genre: gnr,
+          characters: chars,
+        };
+        return movie;
+      });
+      console.log(result);
     }
-    return {
-      id: movie.id,
-      title: movie.title,
-      rating: movie.rating,
-      genre: genres,
-      characters: charcters,
-    };
-  });
+  }, [genres, genresMovie, countries, characters, movies]);
+  // const rows = tableData.map((movie: Movie) => {
+  //   let genres: string = "";
+  //   for (let i = 0; i < movie.genre.length; i++) {
+  //     if (i < movie.genre.length - 1) {
+  //       genres += movie.genre[i].genreName + ", ";
+  //     } else {
+  //       genres += movie.genre[i].genreName;
+  //     }
+  //   }
+  //   let charcters: string = "";
+  //   for (let i = 0; i < movie.characters.length; i++) {
+  //     if (i < movie.characters.length - 1) {
+  //       charcters +=
+  //         movie.characters[i].characterName +
+  //         `(${movie.characters[i].actorName})` +
+  //         ", ";
+  //     } else {
+  //       charcters +=
+  //         movie.characters[i].characterName +
+  //         `(${movie.characters[i].actorName})`;
+  //     }
+  //   }
+  //   return {
+  //     id: movie.id,
+  //     title: movie.title,
+  //     rating: movie.rating,
+  //     genre: genres,
+  //     characters: charcters,
+  //   };
+  // });
+
   return (
     <main className={styles.main}>
       <div>
@@ -69,7 +222,7 @@ export default function Home() {
                 <TableCell>Characters</TableCell>
               </TableRow>
             </TableHead>
-            <TableBody>
+            {/* <TableBody>
               {rows.map((row: any) => (
                 <TableRow key={row.id}>
                   <TableCell>{row.id}</TableCell>
@@ -79,13 +232,23 @@ export default function Home() {
                   <TableCell>{row.characters}</TableCell>
                 </TableRow>
               ))}
-            </TableBody>
+            </TableBody> */}
           </Table>
         </TableContainer>
       </div>
-      <div>
+      <div className="flex flex-column flex-even">
         <h2>Perform Update, Delete and Create Operations</h2>
+
+        <Button
+          variant="contained"
+          onClick={() => {
+            setAddNewIsVisible(true);
+          }}
+        >
+          Add a Movie
+        </Button>
       </div>
+      {addNewIsVisible && <AddNewMovie setVisibility={setAddNewIsVisible} />}
     </main>
   );
 }
