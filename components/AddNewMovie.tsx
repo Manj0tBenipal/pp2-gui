@@ -1,7 +1,6 @@
 "use client";
 import styles from "@/components/newmovie.module.css";
 import {
-  Alert,
   Button,
   Checkbox,
   FormControl,
@@ -10,8 +9,6 @@ import {
   MenuItem,
   Select,
   SelectChangeEvent,
-  Slider,
-  Snackbar,
   TextField,
 } from "@mui/material";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -25,6 +22,7 @@ import {
 import { useState, MouseEvent, SyntheticEvent } from "react";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
 
 export default function AddNewMovie({
   setVisibility,
@@ -50,12 +48,13 @@ export default function AddNewMovie({
   const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [countryError, setCountryError] = useState<boolean>(false);
   const [selectedCharacters, setSelectedCharacter] = useState<string[]>([]);
+  const [charactersError, setCharactersError] = useState<boolean>(false);
   const [rating, setRating] = useState<string>("");
   const [ratingError, setRatingError] = useState({
     range: false,
     numeric: false,
   });
-  const [date, setDate] = useState<Date>(new Date());
+  const [date, setDate] = useState<any>(dayjs(Date.now()));
   const [title, setTitle] = useState<string>("");
   const [titleError, setTitleError] = useState<boolean>(false);
   function validateTitle(title: string) {
@@ -103,6 +102,10 @@ export default function AddNewMovie({
     }
     if (selectedCountry.length === 0) {
       setCountryError(true);
+      return;
+    }
+    if (selectedCharacters.length === 0) {
+      setCharactersError(true);
       return;
     }
   }
@@ -219,6 +222,7 @@ export default function AddNewMovie({
                 id="characterSelect"
                 label="Character"
                 multiple
+                error={charactersError}
                 onChange={(e: SelectChangeEvent<typeof selectedCharacters>) =>
                   setSelectedCharacter(
                     typeof e.target.value === "string"
@@ -273,6 +277,7 @@ export default function AddNewMovie({
 
             <FormControl fullWidth>
               <DatePicker
+                value={date}
                 onChange={(date: any) => {
                   const dateObj: Date = date.toDate();
                   setDate(dateObj);
