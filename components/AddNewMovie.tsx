@@ -25,7 +25,7 @@ import {
 } from "@/app/types/Movie";
 import { useState, MouseEvent, SyntheticEvent, use } from "react";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+
 import dayjs from "dayjs";
 import { CharacterWithoutId, PostDataMovie } from "@/app/types/PostData";
 import { Cancel } from "@mui/icons-material";
@@ -188,7 +188,7 @@ export default function AddNewMovie({
   }
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
+   
       <div className={`${styles.wrapper}`}>
         <div className={`${styles.container}`}>
           <form className={`${styles.form} flex flex-evenly`}>
@@ -427,6 +427,6 @@ export default function AddNewMovie({
           </form>
         </div>
       </div>
-    </LocalizationProvider>
+
   );
 }

@@ -3,13 +3,19 @@ import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import {
   Button,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
 } from "@mui/material";
 import {
   Character,
@@ -20,8 +26,14 @@ import {
   Movie,
 } from "./types/Movie";
 import AddNewMovie from "@/components/AddNewMovie";
+import { WidthFull } from "@mui/icons-material";
+import { DatePicker } from "@mui/x-date-pickers";
+import dayjs from "dayjs";
 
 export default function Home() {
+  /**
+   * Data needed for the table
+   */
   const [dataChanged, setDataChanged] = useState<number>(0);
   const [tableData, setTableData] = useState<MainTableRow[]>([]);
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -30,6 +42,17 @@ export default function Home() {
   const [countries, setCountries] = useState<Country[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [addNewIsVisible, setAddNewIsVisible] = useState(false);
+
+  /**
+   * Data needed for the form
+   */
+  const [selectedMovie, setSelectedMovie] = useState<string>("");
+  const [movieDetails, setMovieDetails] = useState<any>({
+    title: "",
+    rating: 0,
+    releaseDate: new Date(),
+    country: "",
+  });
   useEffect(() => {
     async function getAllData() {
       const genresRes = await fetch("/api/genres", {
@@ -246,9 +269,114 @@ export default function Home() {
             </Table>
           </TableContainer>
         </div>
-        <div className="flex flex-column flex-even">
-          <h2>Perform Update, Delete and Create Operations</h2>
-
+        <div
+          className="flex  flex-evenly flex-gap-small flex-wrap"
+          style={{ alignItems: "flex-start" }}
+        >
+          <h2 className="min-w-100">
+            Perform Update, Delete and Create Operations
+          </h2>
+          <div className={`${styles.movieUpdateContainer} min-w-100`}>
+            <FormControl fullWidth>
+              <InputLabel id="movieLabel">Choose A Movie</InputLabel>
+              <Select
+                labelId="movieLabel"
+                id="movieSelect"
+                label="Movie"
+                value={selectedMovie}
+                onChange={(e) => setSelectedMovie(e.target.value)}
+              >
+                {movies.map((movie: Movie) => {
+                  return (
+                    <MenuItem key={movie.id} value={movie.id}>
+                      {movie.title}
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
+          </div>
+          <div className="w-50-pad">
+            <FormControl fullWidth>
+              <TextField
+                id="outlined-basic"
+                label="Movie Title"
+                variant="outlined"
+                value={movieDetails.title}
+                onChange={(e) =>
+                  setMovieDetails((prev: any) => ({
+                    ...prev,
+                    title: e.target.value,
+                  }))
+                }
+              />
+            </FormControl>
+          </div>
+          <div className="w-50-pad">
+            <FormControl fullWidth>
+              <TextField
+                id="outlined-basic"
+                label="Movie Rating"
+                variant="outlined"
+                value={movieDetails.rating}
+                onChange={(e) =>
+                  setMovieDetails((prev: any) => ({
+                    ...prev,
+                    rating: e.target.value,
+                  }))
+                }
+              />
+            </FormControl>
+          </div>
+          <div className="w-50-pad">
+            <FormControl fullWidth>
+              <InputLabel id="countryLabel">Country</InputLabel>
+              <Select
+                labelId="counrtyLabel"
+                id="countrySelect"
+                label="Country"
+                value={movieDetails.country}
+                onChange={(e) =>
+                  setMovieDetails((prev: any) => ({
+                    ...prev,
+                    country: e.target.value,
+                  }))
+                }
+              >
+                {countries.map((country: Country) => {
+                  return (
+                    <MenuItem key={country.countryId} value={country.countryId}>
+                      {country.countryName}
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
+          </div>
+          <div className="w-50-pad">
+            <FormControl fullWidth>
+              <DatePicker
+                value={dayjs(movieDetails.releaseDate)}
+                onChange={(date: any) => {
+                  const dateObj: Date = date.toDate();
+                  setMovieDetails((prev: any) => ({
+                    ...prev,
+                    releaseDate: dateObj,
+                  }));
+                }}
+              />
+            </FormControl>
+          </div>
+          <div className="w-50-pad">
+            <FormControl fullWidth>
+              <Button variant="outlined">Update Movie</Button>
+            </FormControl>
+          </div>
+          <div className="w-50-pad">
+            <FormControl fullWidth>
+              <Button variant="outlined">Delete Movie</Button>
+            </FormControl>
+          </div>
           <Button
             variant="contained"
             onClick={() => {
