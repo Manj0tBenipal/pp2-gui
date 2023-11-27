@@ -3,15 +3,19 @@ import styles from "@/components/newmovie.module.css";
 import {
   Button,
   Checkbox,
+  Fab,
   FormControl,
+  IconButton,
   InputLabel,
+  List,
+  ListItem,
   ListItemText,
   MenuItem,
   Select,
   SelectChangeEvent,
   TextField,
 } from "@mui/material";
-import CancelIcon from "@mui/icons-material/Cancel";
+import DeleteIcon from "@mui/icons-material/Delete";
 import {
   Character,
   Country,
@@ -19,46 +23,87 @@ import {
   GenresMovie,
   Movie,
 } from "@/app/types/Movie";
-import { useState, MouseEvent, SyntheticEvent } from "react";
+import { useState, MouseEvent, SyntheticEvent, use } from "react";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import { CharacterWithoutId, PostDataMovie } from "@/app/types/PostData";
+import { Cancel } from "@mui/icons-material";
 
 export default function AddNewMovie({
   setVisibility,
   genres,
   countries,
-  characters,
   movies,
   genresMovie,
   setMovies,
   setGenresMovie,
+  setDataChanged,
 }: {
   setVisibility: Function;
   genres: Genre[];
   countries: Country[];
-  characters: Character[];
   genresMovie: GenresMovie[];
   movies: Movie[];
   setMovies: Function;
   setGenresMovie: Function;
+  setDataChanged: Function;
 }) {
+  /**
+   * Form Fields
+   */
+  const [title, setTitle] = useState<string>("");
+  const [date, setDate] = useState<Date>(new Date(Date.now()));
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [genresError, setGenresError] = useState<boolean>(false);
   const [selectedCountry, setSelectedCountry] = useState<string>("");
-  const [countryError, setCountryError] = useState<boolean>(false);
-  const [selectedCharacters, setSelectedCharacter] = useState<string[]>([]);
-  const [charactersError, setCharactersError] = useState<boolean>(false);
+  const [characters, setCharacters] = useState<CharacterWithoutId[]>([]);
+  const [characterName, setCharacterName] = useState<string>("");
+  const [actorName, setActorName] = useState<string>("");
   const [rating, setRating] = useState<string>("");
+
+  /**
+   * Form Errors
+   */
+  const [genresError, setGenresError] = useState<boolean>(false);
+  const [countryError, setCountryError] = useState<boolean>(false);
+  const [charactersError, setCharactersError] = useState({
+    actor: false,
+    character: false,
+  });
   const [ratingError, setRatingError] = useState({
     range: false,
     numeric: false,
   });
-  const [date, setDate] = useState<any>(dayjs(Date.now()));
-  const [title, setTitle] = useState<string>("");
   const [titleError, setTitleError] = useState<boolean>(false);
+  /**
+   * Visibility State
+   */
+  const [charactersListIsVisible, setCharactersListIsVisible] =
+    useState<boolean>(false);
+
+  //Validator functions
   function validateTitle(title: string) {
     return title.length === 0;
+  }
+  function validateCharacter(actorName: string, characterName: string) {
+    if (actorName.length === 0) {
+      setCharactersError((prev) => {
+        return { ...prev, actor: true };
+      });
+    } else {
+      setCharactersError((prev) => {
+        return { ...prev, actor: false };
+      });
+    }
+    if (characterName.length === 0) {
+      setCharactersError((prev) => {
+        return { ...prev, character: true };
+      });
+    } else {
+      setCharactersError((prev) => {
+        return { ...prev, character: false };
+      });
+    }
   }
   function validateRating(rating: string) {
     const numericRegex = /^[0-9]+$/;
@@ -86,27 +131,59 @@ export default function AddNewMovie({
       });
     }
   }
-  function handleFormSubmission(e: MouseEvent<HTMLButtonElement>) {
-    e.preventDefault();
-    validateFormData();
-  }
   function validateFormData() {
     if (title.length === 0) {
       setTitleError(true);
-      return;
+      return false;
     }
     validateRating(rating);
     if (selectedGenres.length === 0) {
       setGenresError(true);
-      return;
+      return false;
     }
     if (selectedCountry.length === 0) {
       setCountryError(true);
-      return;
+      return false;
     }
-    if (selectedCharacters.length === 0) {
-      setCharactersError(true);
-      return;
+    if (characters.length === 0) {
+      alert("You must add at least one character");
+      return false;
+    }
+    return true;
+  }
+
+  //Post data preparation
+  function handleFormSubmission(e: MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    const dataIsOk: boolean = validateFormData();
+    if (dataIsOk) {
+      const releaseDate = date.toISOString().split("T")[0];
+
+      const values: PostDataMovie = {
+        title: title,
+        country: selectedCountry,
+        rating: rating,
+        releaseDate: releaseDate,
+        genres: selectedGenres,
+        characters: characters,
+      };
+
+      sendData(values);
+    }
+  }
+  //Post request function
+  async function sendData(values: any) {
+    const res = await fetch("/api/movies", {
+      method: "POST",
+      body: JSON.stringify(values),
+      next: {
+        revalidate: 0,
+      },
+    });
+    const data = await res.json();
+    if (data) {
+      setDataChanged(true);
+      setVisibility(false);
     }
   }
 
@@ -216,68 +293,68 @@ export default function AddNewMovie({
               </Select>
             </FormControl>
             <FormControl fullWidth>
-              <InputLabel id="characterLabel">Characters</InputLabel>
-              <Select
-                labelId="characterLabel"
-                id="characterSelect"
-                label="Character"
-                multiple
-                error={charactersError}
-                onChange={(e: SelectChangeEvent<typeof selectedCharacters>) =>
-                  setSelectedCharacter(
-                    typeof e.target.value === "string"
-                      ? e.target.value.split(",")
-                      : e.target.value
-                  )
-                }
-                renderValue={(selectedCharacters) => {
-                  let string = "";
-                  const c: any = selectedCharacters.map(
-                    (id: number | string) => {
-                      const formattedId: number =
-                        typeof id === "string" ? parseInt(id) : id;
-                      return characters.find(
-                        (el: Character) => el.characterId === formattedId
-                      );
+              <div className="flex flex-column flex-gap-small">
+                <div className="flex flex-evenly flex-gap-small">
+                  <TextField
+                    id="outlined-basic"
+                    label="Actor Name"
+                    variant="outlined"
+                    value={actorName}
+                    onChange={(e) => {
+                      setActorName(e.target.value);
+                      validateCharacter(e.target.value, characterName);
+                    }}
+                    error={charactersError.actor}
+                    helperText={
+                      charactersError.actor ? "Cannot be empty" : null
                     }
-                  );
-                  c.map((el: Character) => {
-                    string += el.characterName + "(" + el.actorName + ") ,";
-                  });
-                  return string;
-                }}
-                value={selectedCharacters}
-              >
-                {characters.map((character: Character) => {
-                  return (
-                    <MenuItem
-                      key={character.characterId}
-                      value={character.characterId}
-                    >
-                      <Checkbox
-                        checked={
-                          selectedCharacters.findIndex(
-                            (c: string) => character.characterId === parseInt(c)
-                          ) > -1
-                        }
-                      />
-                      <ListItemText
-                        primary={
-                          character.characterName +
-                          "(" +
-                          character.actorName +
-                          ")"
-                        }
-                      />
-                    </MenuItem>
-                  );
-                })}
-              </Select>
+                  />
+                  <TextField
+                    id="outlined-basic"
+                    label="Character Name"
+                    variant="outlined"
+                    value={characterName}
+                    onChange={(e) => {
+                      setCharacterName(e.target.value);
+                      validateCharacter(actorName, e.target.value);
+                    }}
+                    error={charactersError.character}
+                    helperText={
+                      charactersError.character ? "Cannot be empty" : null
+                    }
+                  />
+                </div>
+              </div>
+              <div className="flex flex-gap-small flex-even">
+                <Button
+                  variant="text"
+                  onClick={() => {
+                    if (charactersError.actor || charactersError.character)
+                      return;
+                    setCharacters((prev: CharacterWithoutId[]) => {
+                      return [
+                        ...prev,
+                        { characterName: characterName, actorName: actorName },
+                      ];
+                    });
+                    setCharacterName("");
+                    setActorName("");
+                  }}
+                >
+                  Add Character
+                </Button>
+                <Button
+                  variant="text"
+                  onClick={() => setCharactersListIsVisible(true)}
+                >
+                  View List
+                </Button>
+              </div>
             </FormControl>
 
             <FormControl fullWidth>
               <DatePicker
-                value={date}
+                value={dayjs(date)}
                 onChange={(date: any) => {
                   const dateObj: Date = date.toDate();
                   setDate(dateObj);
@@ -296,6 +373,57 @@ export default function AddNewMovie({
             <Button variant="outlined" onClick={() => setVisibility(false)}>
               Cancel
             </Button>
+            {charactersListIsVisible && (
+              <div className={`${styles.charactersList}`}>
+                <Cancel
+                  style={{
+                    position: "absolute",
+                    top: "1rem",
+                    right: "1rem",
+                    cursor: "pointer  ",
+                  }}
+                  onClick={() => setCharactersListIsVisible(false)}
+                />
+
+                <h2>Characters</h2>
+                <List>
+                  {characters.map(
+                    (character: CharacterWithoutId, index: number) => {
+                      return (
+                        <ListItem
+                          key={index}
+                          secondaryAction={
+                            <IconButton
+                              edge="end"
+                              aria-label="delete"
+                              onClick={() =>
+                                setCharacters(
+                                  characters.filter(
+                                    (el: CharacterWithoutId, i: number) =>
+                                      index !== i
+                                  )
+                                )
+                              }
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          }
+                        >
+                          <ListItemText
+                            primary={
+                              character.actorName +
+                              "(" +
+                              character.characterName +
+                              ")"
+                            }
+                          />
+                        </ListItem>
+                      );
+                    }
+                  )}
+                </List>
+              </div>
+            )}
           </form>
         </div>
       </div>

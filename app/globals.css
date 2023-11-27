@@ -13,3 +13,6 @@
 .flex-evenly {
   justify-content: space-evenly;
 }
+.flex-gap-small {
+  gap: 0.5rem;
+}

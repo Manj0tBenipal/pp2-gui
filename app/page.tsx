@@ -22,6 +22,7 @@ import {
 import AddNewMovie from "@/components/AddNewMovie";
 
 export default function Home() {
+  const [dataChanged, setDataChanged] = useState<number>(0);
   const [tableData, setTableData] = useState<MainTableRow[]>([]);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -125,7 +126,7 @@ export default function Home() {
     }
 
     getAllData();
-  }, []);
+  }, [dataChanged]);
   useEffect(() => {
     function len(arr: any) {
       return arr?.length > 0;
@@ -263,7 +264,7 @@ export default function Home() {
           setVisibility={setAddNewIsVisible}
           genres={genres}
           setMovies={setMovies}
-          characters={characters}
+          setDataChanged={setDataChanged}
           countries={countries}
           genresMovie={genresMovie}
           movies={movies}
