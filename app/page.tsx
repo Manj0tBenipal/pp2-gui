@@ -5,7 +5,6 @@ import {
   Button,
   Checkbox,
   FormControl,
-  Grid,
   InputLabel,
   ListItemText,
   MenuItem,
@@ -29,10 +28,8 @@ import {
   Movie,
 } from "./types/Movie";
 import AddNewMovie from "@/components/AddNewMovie";
-import formStyles from "@/components/newmovie.module.css";
 import { DatePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
-import { Cancel } from "@mui/icons-material";
 
 export default function Home() {
   /**
@@ -59,11 +56,14 @@ export default function Home() {
     genreIds: [],
     characterIds: [],
   });
-  const [characterContainerVisible, setCharacterContainerVisible] =
-    useState<boolean>(false);
-  const cNameRef = useRef<HTMLInputElement>(null);
-  const aNameRef = useRef<HTMLInputElement>(null);
-  console.log(characters);
+  async function updateTable() {
+    const res = await fetch("/api/movies", {
+      method: "PUT",
+      body: JSON.stringify({ ...movieDetails, movieId: selectedMovie }),
+    });
+    const data = await res.json();
+    console.log("client: ", data);
+  }
   useEffect(() => {
     async function getAllData() {
       const genresRes = await fetch("/api/genres", {
@@ -449,19 +449,12 @@ export default function Home() {
               </Select>
             </FormControl>
           </div>
+
           <div className="w-50-pad">
             <FormControl fullWidth>
-              <Button
-                variant="outlined"
-                onClick={() => setCharacterContainerVisible(true)}
-              >
-                View Characters
+              <Button variant="outlined" onClick={() => updateTable()}>
+                Update Movie
               </Button>
-            </FormControl>
-          </div>
-          <div className="w-50-pad">
-            <FormControl fullWidth>
-              <Button variant="outlined">Update Movie</Button>
             </FormControl>
           </div>
           <div className="w-50-pad">
@@ -490,82 +483,6 @@ export default function Home() {
           movies={movies}
           setGenresMovie={setGenresMovie}
         />
-      )}
-      {characterContainerVisible && (
-        <div className={`${formStyles.wrapper}`}>
-          <div className={`${formStyles.container}`}>
-            <Cancel
-              style={{
-                position: "absolute",
-                top: "1rem",
-                right: "1rem",
-                cursor: "pointer  ",
-              }}
-              onClick={() => setCharacterContainerVisible(false)}
-            />
-
-            <h2>Characters</h2>
-            {/* *
-             *When a movie is selected in the form movieDetails Object is populated
-             * The characterIds property consists of all the ids of characters in that movie
-             *
-             * This method finds those characters in the array containing all the characters in database
-             *
-             * returns a .jsx element containin TextFields
-             * when a textField is changed and update button is clicked
-             *
-             * The value character Object in main characters array having the same characterId is also changed.
-             *
-             * Later all the updates are pushed to the database
-             */}
-            {movieDetails.characterIds.map((id: number) => {
-              const character: Character = characters.filter(
-                (c: Character) => c.characterId === id
-              )[0];
-              return (
-                <div key={character.characterId} className="w-33-pad">
-                  <TextField
-                    variant="outlined"
-                    ref={cNameRef}
-                    value={character.characterName}
-                    label="Character Name"
-                  />
-                  <TextField
-                    variant="outlined"
-                    ref={aNameRef}
-                    value={character.actorName}
-                    label="Actor Name"
-                  />
-                  <Button
-                    variant="outlined"
-                    onClick={() => {
-                      setCharacters((prev: Character[]) => {
-                        const newCharacters: Character[] = prev.map(
-                          (c: Character) => {
-                            if (c.characterId === id) {
-                              if (aNameRef.current) {
-                                const name = aNameRef.current.value || "";
-                                c.actorName = name;
-                              }
-                              if (cNameRef.current) {
-                                const name = cNameRef.current.value || "";
-                                c.characterName = name;
-                              }
-                            }
-                            return c;
-                          }
-                        );
-                        return newCharacters;
-                      });
-                    }}
-                  >
-                    Update Character
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
       )}
     </>
   );
