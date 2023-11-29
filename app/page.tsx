@@ -1,14 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import styles from "./page.module.css";
 import {
   Button,
+  Checkbox,
   FormControl,
   Grid,
   InputLabel,
+  ListItemText,
   MenuItem,
   Paper,
   Select,
+  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -26,9 +29,10 @@ import {
   Movie,
 } from "./types/Movie";
 import AddNewMovie from "@/components/AddNewMovie";
-import { WidthFull } from "@mui/icons-material";
+import formStyles from "@/components/newmovie.module.css";
 import { DatePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
+import { Cancel } from "@mui/icons-material";
 
 export default function Home() {
   /**
@@ -50,9 +54,16 @@ export default function Home() {
   const [movieDetails, setMovieDetails] = useState<any>({
     title: "",
     rating: 0,
-    releaseDate: new Date(),
+    releaseDate: new Date(Date.now()),
     country: "",
+    genreIds: [],
+    characterIds: [],
   });
+  const [characterContainerVisible, setCharacterContainerVisible] =
+    useState<boolean>(false);
+  const cNameRef = useRef<HTMLInputElement>(null);
+  const aNameRef = useRef<HTMLInputElement>(null);
+  console.log(characters);
   useEffect(() => {
     async function getAllData() {
       const genresRes = await fetch("/api/genres", {
@@ -141,7 +152,7 @@ export default function Home() {
             parseInt(date[1]),
             parseInt(date[2])
           ),
-          country: movie.country_id,
+          country: movie.country,
         };
         return m;
       });
@@ -150,6 +161,32 @@ export default function Home() {
 
     getAllData();
   }, [dataChanged]);
+
+  useEffect(() => {
+    if (selectedMovie) {
+      const movie: Movie | undefined = movies.find((m: Movie) => {
+        return m.id == parseInt(selectedMovie);
+      });
+
+      if (!movie) return;
+      const genreIds: number[] = genresMovie
+        .filter((gm: GenresMovie) => gm.movieId === movie.id)
+        .map((gm: GenresMovie) => gm.genreId);
+
+      const characterIds: number[] = characters
+        .filter((c: Character) => c.movieId === movie.id)
+        .map((c: Character) => c.characterId);
+      setMovieDetails(() => ({
+        title: movie.title,
+        rating: movie.rating,
+        releaseDate: movie.releaseDate.toISOString().split("T")[0],
+        country: movie.country,
+        genreIds: genreIds,
+        characterIds: characterIds,
+      }));
+    }
+  }, [selectedMovie]);
+
   useEffect(() => {
     function len(arr: any) {
       return arr?.length > 0;
@@ -336,12 +373,12 @@ export default function Home() {
                 id="countrySelect"
                 label="Country"
                 value={movieDetails.country}
-                onChange={(e) =>
+                onChange={(e) => {
                   setMovieDetails((prev: any) => ({
                     ...prev,
                     country: e.target.value,
-                  }))
-                }
+                  }));
+                }}
               >
                 {countries.map((country: Country) => {
                   return (
@@ -365,6 +402,61 @@ export default function Home() {
                   }));
                 }}
               />
+            </FormControl>
+          </div>
+          <div className="w-50-pad">
+            <FormControl fullWidth>
+              <InputLabel id="genre">Genre</InputLabel>
+              <Select
+                labelId="genre"
+                id="genreSelect"
+                label="Genre"
+                multiple
+                // error={genresError}
+                onChange={(e: SelectChangeEvent) =>
+                  setMovieDetails((prev: any) => ({
+                    ...prev,
+                    genreIds: e.target.value,
+                  }))
+                }
+                renderValue={() => {
+                  let string = "";
+                  const g: any = movieDetails.genreIds.map((id: number) => {
+                    return genres.find((el: Genre) => el.genreId === id);
+                  });
+                  g.map((el: Genre) => {
+                    string += el.genreName + ",";
+                  });
+                  return string;
+                }}
+                value={movieDetails.genreIds}
+              >
+                {genres.map((genre: Genre) => {
+                  return (
+                    <MenuItem key={genre.genreId} value={genre.genreId}>
+                      <Checkbox
+                        checked={
+                          movieDetails.genreIds.findIndex(
+                            (id: number) => genre.genreId === id
+                          ) > -1
+                        }
+                      />
+                      <ListItemText primary={genre.genreName} />
+                      {genre.genreName}
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
+          </div>
+          <div className="w-50-pad">
+            <FormControl fullWidth>
+              <Button
+                variant="outlined"
+                onClick={() => setCharacterContainerVisible(true)}
+              >
+                View Characters
+              </Button>
             </FormControl>
           </div>
           <div className="w-50-pad">
@@ -398,6 +490,82 @@ export default function Home() {
           movies={movies}
           setGenresMovie={setGenresMovie}
         />
+      )}
+      {characterContainerVisible && (
+        <div className={`${formStyles.wrapper}`}>
+          <div className={`${formStyles.container}`}>
+            <Cancel
+              style={{
+                position: "absolute",
+                top: "1rem",
+                right: "1rem",
+                cursor: "pointer  ",
+              }}
+              onClick={() => setCharacterContainerVisible(false)}
+            />
+
+            <h2>Characters</h2>
+            {/* *
+             *When a movie is selected in the form movieDetails Object is populated
+             * The characterIds property consists of all the ids of characters in that movie
+             *
+             * This method finds those characters in the array containing all the characters in database
+             *
+             * returns a .jsx element containin TextFields
+             * when a textField is changed and update button is clicked
+             *
+             * The value character Object in main characters array having the same characterId is also changed.
+             *
+             * Later all the updates are pushed to the database
+             */}
+            {movieDetails.characterIds.map((id: number) => {
+              const character: Character = characters.filter(
+                (c: Character) => c.characterId === id
+              )[0];
+              return (
+                <div key={character.characterId} className="w-33-pad">
+                  <TextField
+                    variant="outlined"
+                    ref={cNameRef}
+                    value={character.characterName}
+                    label="Character Name"
+                  />
+                  <TextField
+                    variant="outlined"
+                    ref={aNameRef}
+                    value={character.actorName}
+                    label="Actor Name"
+                  />
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      setCharacters((prev: Character[]) => {
+                        const newCharacters: Character[] = prev.map(
+                          (c: Character) => {
+                            if (c.characterId === id) {
+                              if (aNameRef.current) {
+                                const name = aNameRef.current.value || "";
+                                c.actorName = name;
+                              }
+                              if (cNameRef.current) {
+                                const name = cNameRef.current.value || "";
+                                c.characterName = name;
+                              }
+                            }
+                            return c;
+                          }
+                        );
+                        return newCharacters;
+                      });
+                    }}
+                  >
+                    Update Character
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </>
   );
