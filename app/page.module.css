@@ -5,15 +5,22 @@
   gap: 2rem;
   align-items: center;
   justify-content: center;
-  max-width: 1220px;
-  margin: auto;
-
+  width: 100%;
+  margin: 10px auto;
+  max-width: 1820px;
+  width: calc(100% - 20px);
   box-shadow: 1px 1px 10px 0px rgba(0, 0, 0, 0.2);
   border-radius: 20px;
+  background-color: white;
 }
 
 .main > div {
   width: calc(50% - 2.5rem);
   padding: 1rem;
 }
-
+.main > div:nth-child(1) {
+  flex: 1;
+}
+.updateForm {
+  max-width: 500px !important;
+}

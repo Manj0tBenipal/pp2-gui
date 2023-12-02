@@ -10,15 +10,8 @@ import {
   InputLabel,
   ListItemText,
   MenuItem,
-  Paper,
   Select,
   SelectChangeEvent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
 } from "@mui/material";
 import {
@@ -60,17 +53,80 @@ export default function Home() {
     characterIds: [],
   });
 
-  async function updateTable() {
-    const res = await fetch("/api/movies", {
-      method: "PUT",
-      body: JSON.stringify({ ...movieDetails, movieId: selectedMovie }),
-    });
-    const data = await res.json();
+  /**
+   * Data needed for the table
+   */
+  const rows = tableData.map((movie: MainTableRow) => {
+    let genres: string = "";
+    for (let i = 0; i < movie.genres.length; i++) {
+      if (i < movie.genres.length - 1) {
+        genres += movie.genres[i].genreName + ", ";
+      } else {
+        genres += movie.genres[i].genreName;
+      }
+    }
+    let charcters: string = "";
+    for (let i = 0; i < movie.characters.length; i++) {
+      if (i < movie.characters.length - 1) {
+        charcters +=
+          movie.characters[i].characterName +
+          `(${movie.characters[i].actorName})` +
+          ", ";
+      } else {
+        charcters +=
+          movie.characters[i].characterName +
+          `(${movie.characters[i].actorName})`;
+      }
+    }
+    return {
+      id: movie.id,
+      title: movie.title,
+      rating: movie.rating,
+      genre: genres,
+      characters: charcters,
+      country: movie.country.countryName,
+    };
+  });
 
-    if (data.affectedRows > 0) {
-      router.push("/");
+  const columns: GridColDef[] = [
+    {
+      headerName: "Id",
+      field: "id",
+      width: 70,
+    },
+    { headerName: "Title", field: "title", width: 200 },
+    { headerName: "Rating(Out of 10)", field: "rating", width: 70 },
+    { headerName: "Genre", field: "genre", width: 170 },
+    { headerName: "Characters", field: "characters", width: 170 },
+    { headerName: "Country", field: "country", width: 100 },
+  ];
+  async function updateTable() {
+    try {
+      const res = await fetch("/api/movies", {
+        method: "PUT",
+        body: JSON.stringify({ ...movieDetails, movieId: selectedMovie }),
+      });
+      const data = await res.json();
+      console.log(data);
+      setDataChanged((prev) => prev + 1);
+    } catch (e) {
+      console.log(e);
     }
   }
+  async function deleteMovie() {
+    try {
+      const res = await fetch("/api/movies", {
+        method: "DELETE",
+        body: JSON.stringify({ movieId: selectedMovie }),
+      });
+      const data = await res.json();
+      console.log(data);
+      setDataChanged((prev) => prev + 1);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
   useEffect(() => {
     async function getAllData() {
       const genresRes = await fetch("/api/genres", {
@@ -159,7 +215,9 @@ export default function Home() {
             parseInt(date[1]),
             parseInt(date[2])
           ),
-          country: movie.country,
+          country: countries.filter(
+            (c: Country) => c.countryId === movie.country
+          )[0],
         };
         return m;
       });
@@ -229,15 +287,14 @@ export default function Home() {
             } as Character);
           }
         });
-        const country: Country =
-          countries?.filter((c: Country) => {
-            if (c.countryId === el.id) {
-              return {
-                countryId: c.countryId,
-                countryName: c.countryName,
-              } as Country;
-            }
-          })[0] || ({} as Country);
+        let country: Country = {} as Country;
+
+        countries.map((c: Country) => {
+          console.log(el.country, c.countryId);
+          if (el.country.countryId === c.countryId) {
+            country = c;
+          }
+        });
 
         const tableRow: MainTableRow = {
           id: el.id,
@@ -253,49 +310,7 @@ export default function Home() {
       setTableData(() => result || ([] as MainTableRow[]));
     }
   }, [genres, genresMovie, countries, characters, movies]);
-  const rows = tableData.map((movie: MainTableRow) => {
-    let genres: string = "";
-    for (let i = 0; i < movie.genres.length; i++) {
-      if (i < movie.genres.length - 1) {
-        genres += movie.genres[i].genreName + ", ";
-      } else {
-        genres += movie.genres[i].genreName;
-      }
-    }
-    let charcters: string = "";
-    for (let i = 0; i < movie.characters.length; i++) {
-      if (i < movie.characters.length - 1) {
-        charcters +=
-          movie.characters[i].characterName +
-          `(${movie.characters[i].actorName})` +
-          ", ";
-      } else {
-        charcters +=
-          movie.characters[i].characterName +
-          `(${movie.characters[i].actorName})`;
-      }
-    }
-    return {
-      id: movie.id,
-      title: movie.title,
-      rating: movie.rating,
-      genre: genres,
-      characters: charcters,
-      country: movie.country.countryName,
-    };
-  });
-  const columns: GridColDef[] = [
-    {
-      headerName: "Id",
-      field: "id",
-      width: 70,
-    },
-    { headerName: "Title", field: "title", width: 70 },
-    { headerName: "Rating(Out of 10)", field: "rating", width: 70 },
-    { headerName: "Genre", field: "genre", width: 170 },
-    { headerName: "Characters", field: "characters", width: 170 },
-    { headerName: "Country", field: "country", width: 100 },
-  ];
+
   return (
     <>
       <main className={styles.main}>
@@ -312,7 +327,7 @@ export default function Home() {
           ></DataGrid>
         </div>
         <div
-          className="flex  flex-evenly flex-gap-small flex-wrap"
+          className={`${styles.updateForm} flex  flex-evenly flex-gap-1 flex-wrap`}
           style={{ alignItems: "flex-start" }}
         >
           <h2 className="min-w-100">
@@ -338,7 +353,7 @@ export default function Home() {
               </Select>
             </FormControl>
           </div>
-          <div className="w-50-pad">
+          <div className="min-w-100">
             <FormControl fullWidth>
               <TextField
                 id="outlined-basic"
@@ -464,7 +479,12 @@ export default function Home() {
           </div>
           <div className="w-50-pad">
             <FormControl fullWidth>
-              <Button variant="outlined">Delete Movie</Button>
+              <Button
+                variant="outlined"
+                onClick={async () => await deleteMovie()}
+              >
+                Delete Movie
+              </Button>
             </FormControl>
           </div>
           <Button

@@ -54,11 +54,11 @@ export async function PUT(req: Request) {
   let affectedRows = 0;
   try {
     const body = await req.json();
-    // const movieRes = await query(
-    //   "UPDATE movie SET movie_name = ?, country = ? , rating = ? , release_date = ? where movie_id=?;",
-    //   [body.title, body.country, body.rating, body.releaseDate, body.movieId]
-    // );
-    // affectedRows += movieRes.affectedRows;
+    const movieRes = await query(
+      "UPDATE movie SET movie_name = ?, country = ? , rating = ? , release_date = ? where movie_id=?;",
+      [body.title, body.country, body.rating, body.releaseDate, body.movieId]
+    );
+    affectedRows += movieRes.affectedRows;
     /**
      * Determining which genre to bekept and which to be deleted
      */
@@ -84,8 +84,7 @@ export async function DELETE(req: Request) {
   let affectedRows = 0;
   const body = await req.json();
   try {
-    const deleteMovie = await query("CALL delete_movie_and_characters(?);", 
-    [
+    const deleteMovie = await query("CALL delete_movie_and_characters(?);", [
       body.movieId,
     ]);
     affectedRows += deleteMovie.affectedRows;

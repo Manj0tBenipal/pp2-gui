@@ -19,10 +19,16 @@
 .flex-gap-small {
   gap: 0.5rem;
 }
+.flex-gap-1 {
+  gap: 1rem;
+}
 .min-w-100 {
   min-width: 100%;
   flex-basis: 100%;
 }
 .w-50-pad {
-  width: calc(50% - 0.25rem);
+  width: calc(50% - 0.5rem);
+}
+body {
+  background-color: rgba(213, 213, 213, 0.5);
 }
