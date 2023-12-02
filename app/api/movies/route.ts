@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const data: any = await query("select * from movie", []);
-   
+
     return Response.json(data);
   } catch (error) {
     console.error(error);
@@ -54,21 +54,41 @@ export async function PUT(req: Request) {
   let affectedRows = 0;
   try {
     const body = await req.json();
-    const movieRes = await query(
-      "UPDATE movie SET movie_name = ?, country = ? , rating = ? , release_date = ? where movie_id=?;",
-      [body.title, body.country, body.rating, body.releaseDate, body.movieId]
+    // const movieRes = await query(
+    //   "UPDATE movie SET movie_name = ?, country = ? , rating = ? , release_date = ? where movie_id=?;",
+    //   [body.title, body.country, body.rating, body.releaseDate, body.movieId]
+    // );
+    // affectedRows += movieRes.affectedRows;
+    /**
+     * Determining which genre to bekept and which to be deleted
+     */
+    const deleteGenre = await query(
+      "Delete from genre_movie where movie_id = ?;",
+      [body.movieId]
     );
-    affectedRows += movieRes.affectedRows;
     for (let i = 0; i < body.genreIds.length; i++) {
-      const dataExists= await query("select * from genre_movie where movie_id=? and genre_id=?;",[body.movieId,body.genreIds[i]]);
-      
-      const genreRes = await query(
-        "UPDATE genre_movie SET movie_id= ?, genre_id = ? where movie_id=?;",
-        [body.movieId, body.genreIds[i], body.movieId]
+      const genreMovieRes: any = await query(
+        "INSERT INTO genre_movie(movie_id, genre_id) values(?,?);",
+        [body.movieId, body.genreIds[i]]
       );
-
-      affectedRows += genreRes.affectedRows;
+      affectedRows += genreMovieRes.affectedRows;
     }
+    return Response.json({ body: body, affectedRows: affectedRows });
+  } catch (error) {
+    console.error(error);
+    return new Response(JSON.stringify(error));
+  }
+}
+
+export async function DELETE(req: Request) {
+  let affectedRows = 0;
+  const body = await req.json();
+  try {
+    const deleteMovie = await query("CALL delete_movie_and_characters(?);", 
+    [
+      body.movieId,
+    ]);
+    affectedRows += deleteMovie.affectedRows;
     return Response.json({ body: body, affectedRows: affectedRows });
   } catch (error) {
     console.error(error);

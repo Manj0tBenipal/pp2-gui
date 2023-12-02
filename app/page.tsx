@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import styles from "./page.module.css";
+import { useRouter } from "next/navigation";
+import { DataGrid, GridColDef, GridValueGetterParams } from "@mui/x-data-grid";
 import {
   Button,
   Checkbox,
@@ -32,6 +34,7 @@ import { DatePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 
 export default function Home() {
+  const router = useRouter();
   /**
    * Data needed for the table
    */
@@ -56,13 +59,17 @@ export default function Home() {
     genreIds: [],
     characterIds: [],
   });
+
   async function updateTable() {
     const res = await fetch("/api/movies", {
       method: "PUT",
       body: JSON.stringify({ ...movieDetails, movieId: selectedMovie }),
     });
     const data = await res.json();
-    console.log("client: ", data);
+
+    if (data.affectedRows > 0) {
+      router.push("/");
+    }
   }
   useEffect(() => {
     async function getAllData() {
@@ -274,37 +281,35 @@ export default function Home() {
       rating: movie.rating,
       genre: genres,
       characters: charcters,
+      country: movie.country.countryName,
     };
   });
-
+  const columns: GridColDef[] = [
+    {
+      headerName: "Id",
+      field: "id",
+      width: 70,
+    },
+    { headerName: "Title", field: "title", width: 70 },
+    { headerName: "Rating(Out of 10)", field: "rating", width: 70 },
+    { headerName: "Genre", field: "genre", width: 170 },
+    { headerName: "Characters", field: "characters", width: 170 },
+    { headerName: "Country", field: "country", width: 100 },
+  ];
   return (
     <>
       <main className={styles.main}>
         <div>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Id</TableCell>
-                  <TableCell>Title</TableCell>
-                  <TableCell>Rating(Out of 10 )</TableCell>
-                  <TableCell>Genres</TableCell>
-                  <TableCell>Characters</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row: any) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{row.id}</TableCell>
-                    <TableCell>{row.title}</TableCell>
-                    <TableCell>{row.rating}</TableCell>
-                    <TableCell>{row.genre}</TableCell>
-                    <TableCell>{row.characters}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            initialState={{
+              pagination: {
+                paginationModel: { page: 0, pageSize: 5 },
+              },
+            }}
+            pageSizeOptions={[5, 10]}
+          ></DataGrid>
         </div>
         <div
           className="flex  flex-evenly flex-gap-small flex-wrap"
